@@ -9,6 +9,7 @@ const { runBrain } = require('./brain');
 const { handleOwnerMessage } = require('./commands');
 const { handleChat } = require('./ai');
 const groq = require('./groq');
+const senses = require('./senses');
 
 let retryDelay = 5000;
 const seen = new Map();
@@ -59,6 +60,7 @@ function start() {
     started = true;
     retryDelay = 5000;
     setupMovements(bot);
+    senses.attach(bot);
     log('Joined the server as ' + bot.username + ' (version ' + bot.version + ')');
     if (config.groqKey) {
       groq.pickModel().catch((e) => log('Groq check failed:', e.message));
@@ -101,7 +103,14 @@ function start() {
     if (m) dispatch(m[1] || m[2], m[3]);
   });
 
-  bot.on('kicked', (reason) => log('Kicked:', JSON.stringify(reason)));
+  bot.on('kicked', (reason) => {
+    const text = JSON.stringify(reason);
+    log('Kicked:', text);
+    if (/duplicate_login/.test(text)) {
+      log('Another copy of this bot uses the name "' + config.username + '". Stop the other one or set a different MC_USERNAME.');
+      retryDelay = 60000;
+    }
+  });
   bot.on('error', (err) => log('Error:', err.message));
   bot.on('end', (reason) => {
     bot._stopped = true;
