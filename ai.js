@@ -210,3 +210,5 @@ async function handleChat(bot, username, text, isOwner) {
 }
 
 module.exports = { handleChat };
+
+require('./planner');
