@@ -21,29 +21,38 @@ async function giveItem(bot, token, count) {
   }
 }
 
-// Optional: the bot plays alone by default, these just let the owner steer it.
+// Orders from the owner. Every order first stops whatever the bot is doing.
 function handleOwnerMessage(bot, message) {
   const t = String(message).trim().toLowerCase();
 
   if (/^(come|here|এসো|আসো|আয়)/.test(t)) {
-    const owner = ownerEntity(bot);
-    if (!owner) return say(bot, "I can't see you.");
+    bot.autonomy = false;
     bot.mode = 'auto';
+    bot.directive = null;
+    bot.pathfinder.stop();
+    const owner = ownerEntity(bot);
+    if (!owner) return say(bot, "I stopped, but I can't see you. Where are you?");
     bot.pathfinder.setGoal(new goals.GoalNear(owner.position.x, owner.position.y, owner.position.z, 2));
     return say(bot, 'Coming!');
   }
   if (/^(stay|wait|stop|থামো|দাঁড়াও)/.test(t)) {
+    bot.autonomy = false;
     bot.mode = 'stay';
-    bot.pathfinder.setGoal(null);
-    return say(bot, 'Okay, staying here. Say "free" when I can play again.');
+    bot.directive = null;
+    bot.pathfinder.stop();
+    return say(bot, 'Okay, staying here.');
   }
   if (/^(follow|সাথে)/.test(t)) {
+    bot.autonomy = false;
     bot.mode = 'follow';
+    bot.directive = null;
+    bot.pathfinder.stop();
     return say(bot, 'Following you!');
   }
   if (/^(free|go|auto|work|resume|খেলো|কাজ)/.test(t)) {
+    bot.autonomy = true;
     bot.mode = 'auto';
-    return say(bot, 'Back to playing!');
+    return say(bot, 'Okay, I will play on my own. Tell me to come or stay any time.');
   }
   if (/^status/.test(t)) {
     const p = bot.entity.position;
@@ -55,6 +64,7 @@ function handleOwnerMessage(bot, message) {
   }
   const m = t.match(/^give\s+([a-z_]+)(?:\s+(\d+))?/);
   if (m) {
+    bot.autonomy = false;
     giveItem(bot, m[1], m[2]).catch(() => {});
   }
 }
